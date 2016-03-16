@@ -307,12 +307,21 @@ class Database {
 
 class Builder extends Database {
 
-    //should this be private ?
+ 
     protected static $myconn;
-    
 
     public function __construct(Database $db) {
         $this->myconn = $db->myconn;
+        $this->init();
+    }
+
+
+    public function init() {
+        $this->qBuild = ''; // reset value
+        $this->qBuild = new stdClass;
+        $this->qBuild->where = array();
+        $this->qBuild->join = array();
+        $this->qBuild->insertdata = array();
     }
 
     public function selects($data) {
@@ -323,11 +332,80 @@ class Builder extends Database {
         }
     }
 
-    public function init() {
-        $this->qBuild = '';
-        $this->qBuild = new stdClass;
-        $this->qBuild->where = array();
-        $this->qBuild->join = array();
+    public function setdata($column, $value) {
+        $this->qBuild->insertdata[$column] = $value;
+        $this->result = $this->qBuild->insertdata;
+    }
+
+    public function insert_to($table) {
+
+        $fieldnames = array_keys($this->qBuild->insertdata);
+        $sql = "INSERT INTO $table";
+        /*** set the field names ***/
+        $fields = '( ' . implode(', ', $fieldnames) . ' )';
+        /*** set the placeholders ***/
+        $bound = '(:' . implode(', :', $fieldnames) . ' )';
+        /*** put the query together ***/
+        $sql .= $fields.' VALUES '.$bound;
+
+        $size = sizeof($fieldnames);
+        $this->myQuery = $sql;
+        /*** prepare and execute ***/
+        $stmt = $this->myconn->prepare($sql);
+        foreach ($this->qBuild->insertdata as $key => $value) {
+            $param1 = ':'.$key;
+            $stmt->bindValue($param1, $value);
+        }
+        
+        if ($stmt->execute()) {
+        //if ($stmt->execute($params)) {
+            array_push($this->result,$this->myconn->lastInsertId());
+            return true; // The data has been inserted
+        } else{
+            array_push($this->result,$this->myconn->errorInfo());
+            return false; // The data has not been inserted
+        }
+       
+    }
+
+    public function update_to($table) {
+        $fieldnames = array_keys($this->qBuild->insertdata);
+        $sql = "UPDATE $table SET";
+        /*** set the field names ***/
+        $fields = implode(', ', $fieldnames);
+        /*** set the placeholders ***/
+        $bound = ':' . implode(', :', $fieldnames);
+        /*** put the query together ***/
+
+        $i=0;
+        foreach ($fieldnames as $key) {
+            if ($i > 0) { $prepend = ', ' } else { $prepend = ''; }
+            $setdata = $prepend . $key.' = :'.$key;
+            $i++;
+        }
+
+        $sql .= $setdata;
+        if (!empty($this->qBuild->where)) {
+            $where = implode(' ', $this->qBuild->where);
+            $sql.= ' WHERE '.$where;
+        }
+
+        $this->myQuery = $sql;
+        /*** prepare and execute ***/
+        $stmt = $this->myconn->prepare($sql);
+        foreach ($this->qBuild->insertdata as $key => $value) {
+            $param1 = ':'.$key;
+            $stmt->bindValue($param1, $value);
+        }
+        
+        if ($stmt->execute()) {
+        //if ($stmt->execute($params)) {
+            array_push($this->result,$this->myconn->lastInsertId());
+            return true; // The data has been inserted
+        } else{
+            array_push($this->result,$this->myconn->errorInfo());
+            return false; // The data has not been inserted
+        }
     }
 
     // table, join condition, join type
