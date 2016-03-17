@@ -35,7 +35,6 @@ class Database {
 
     }
 
-	//test
 	// Function to make connection to database
 	public function connect(){
         try {
