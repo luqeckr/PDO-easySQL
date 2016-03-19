@@ -49,7 +49,7 @@ $db->disconnect();
 ```
 this will make the query: 
 ```sql
-UPDATE usertable SET name='another name', email='anotheremail@domain.com WHERE id > 280'
+UPDATE usertable SET name='another name', email='anotheremail@domain.com' WHERE id > 280
 ```
 
 ## INSERT Builder
