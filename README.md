@@ -4,7 +4,7 @@ Modified from MySQLi-CRUD-PHP-OOP by the original Author Rory Standley <rorystan
 Also, contain additional sql builder, to create a query with very simple and clean code.
 
 this is how to use the builder
-
+## SELECT builder
 ```php
 <?php
 $db = new Database();
@@ -34,7 +34,7 @@ echo '</pre>';
 $db->disconnect();
 ?>
 ```
-
+## UPDATE Builder
 To update the table
 ```php
 <?php
@@ -52,7 +52,7 @@ this will make the query:
 UPDATE usertable SET name='another name', email='anotheremail@domain.com WHERE id > 280'
 ```
 
-Inserting
+## INSERT Builder
 ```php
 <?php
 $db = new Database();
