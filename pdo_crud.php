@@ -359,15 +359,14 @@ class Builder extends Database {
 
         $size = sizeof($fieldnames);
         $this->myQuery = $sql;
-        /*** prepare and execute ***/
+        /*** prepare and bindValue ***/
         $stmt = $this->myconn->prepare($sql);
         foreach ($this->qBuild->insertdata as $key => $value) {
             $param1 = ':'.$key;
             $stmt->bindValue($param1, $value);
         }
-        
+        /* execute */
         if ($stmt->execute()) {
-        //if ($stmt->execute($params)) {
             array_push($this->result,$this->myconn->lastInsertId());
             return true; // The data has been inserted
         } else{
@@ -386,39 +385,36 @@ class Builder extends Database {
         /*** set the placeholders ***/
         $bound = ':' . implode(', :', $fieldnames);
         /*** put the query together ***/
-
         $i=0; $setdata = '';
         foreach ($fieldnames as $key) {
             if ($i > 0) { $prepend = ', '; } else { $prepend = ''; }
             $setdata.= $prepend . $key.' = :'.$key;
             $i++;
         }
-
         $sql .= $setdata;
-        
+        /* Let's join the WHERE to the query, if any */        
         if (!empty($this->qBuild->where)) {
             $where = implode(' ', $this->qBuild->where);
             $sql.= ' WHERE '.$where;
         } 
-
+        /* keep the query */
         $this->myQuery = $sql;
-        /*** prepare and execute ***/
+        /*** prepare and binding ***/
         $stmt = $this->myconn->prepare($sql);
         foreach ($this->qBuild->insertdata as $key => $value) {
             $param1 = ':'.$key;
             $stmt->bindValue($param1, $value);
         }
-
-        // bind where value
+        /* bind WHERE value */
         $i=0;
         foreach ($this->qBuild->whereCol as $key) {
             $param1 = ':w'.$key;
             $stmt->bindValue($param1, $this->qBuild->whereValue[$i]);
-            array_push($this->result, $param1.' '.$this->qBuild->whereValue[$i]);
+            //array_push($this->result, $param1.' '.$this->qBuild->whereValue[$i]);
             $i++;
         }
 
-        // execute
+        /* execute */
         if ($stmt->execute()) {
         //if ($stmt->execute($params)) {
             array_push($this->result,$stmt->rowCount());
@@ -449,6 +445,7 @@ class Builder extends Database {
         array_push($this->qBuild->whereCol, $col[0]);
         array_push($this->qBuild->where, $data);
         array_push($this->qBuild->whereValue, $value);
+        // for debugging
         array_push($this->result, $data.' xx '.$value);
     }
 
@@ -470,9 +467,17 @@ class Builder extends Database {
         }
         
         $this->myQuery = $sql; // Pass back the SQL
-
+        /* Prepare the query */
         $stmt = $this->myconn->prepare($sql);
-
+        /* bind WHERE value */
+        $i=0;
+        foreach ($this->qBuild->whereCol as $key) {
+            $param1 = ':w'.$key;
+            $stmt->bindValue($param1, $this->qBuild->whereValue[$i]);
+            //array_push($this->result, $param1.' '.$this->qBuild->whereValue[$i]);
+            $i++;
+        }
+        /* try to execute */
         if ($g = $stmt->execute()) {
             //$stmt->fetchAll(PDO::FETCH_ASSOC);
             $this->numResults = $this->last_row_count();
