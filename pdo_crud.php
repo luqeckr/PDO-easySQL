@@ -322,7 +322,6 @@ class Builder extends Database {
         $this->init();
     }
 
-
     public function init() {
         $this->qBuild = ''; // reset value
         $this->qBuild = new stdClass;
@@ -331,6 +330,7 @@ class Builder extends Database {
         $this->qBuild->whereCol = array();
         $this->qBuild->join = array();
         $this->qBuild->insertdata = array();
+        $this->qBuild->orderby = '';
     }
 
     public function selects($data) {
@@ -346,8 +346,37 @@ class Builder extends Database {
         $this->result = $this->qBuild->insertdata;
     }
 
-    public function insert_to($table) {
+    /* table, join condition, join type */
+    public function join($data, $condition, $jointype=null) {
+        $data = $jointype ? $jointype.' JOIN '.$data : ' JOIN '.$data;
+        $data.= $condition ? ' ON '.$condition : '';
+        $data = $data . ' ';
+        array_push($this->qBuild->join, $data);
+    }
 
+    /* WHERE column [optional: ><=], value, AND/OR */
+    public function where($column, $value, $opt=null) {
+        // check for operator in $column
+        $col = explode(' ', $column);
+        /* default operator is = */
+        $oper = isset($col[1]) ? $col[1] : '=';
+        
+        $wheredata = $col[0].$oper.':w'.$col[0]; // column =>!=< :wcolumn
+
+        // is it more than one WHERE?
+        $data = $opt ? ' '.$opt.' '.$wheredata : $wheredata;
+        array_push($this->qBuild->whereCol, $col[0]);
+        array_push($this->qBuild->where, $data);
+        array_push($this->qBuild->whereValue, $value);
+        // for debugging
+        array_push($this->result, $data.' xx '.$value);
+    }
+
+    public function orderby($column=null) {
+        $this->qBuild->orderby = $column ? $column : '';
+    }
+
+    public function insert_to($table) {
         $fieldnames = array_keys($this->qBuild->insertdata);
         $sql = "INSERT INTO $table";
         /*** set the field names ***/
@@ -425,31 +454,6 @@ class Builder extends Database {
         }
     }
 
-    // table, join condition, join type
-    public function join($data, $condition, $jointype=null) {
-        $data = $jointype ? $jointype.' JOIN '.$data : ' JOIN '.$data;
-        $data.= $condition ? ' ON '.$condition : '';
-        $data = $data . ' ';
-        array_push($this->qBuild->join, $data);
-    }
-
-    public function where($column, $value, $opt=null) {
-        // check for operator in $column
-        $col = explode(' ', $column);
-        $oper = isset($col[1]) ? $col[1] : '=';
-        
-        $wheredata = $col[0].$oper.':w'.$col[0]; // column =>!=< :wcolumn
-
-        // is it more than one WHERE?
-        $data = $opt ? ' '.$opt.' '.$wheredata : $wheredata;
-        array_push($this->qBuild->whereCol, $col[0]);
-        array_push($this->qBuild->where, $data);
-        array_push($this->qBuild->whereValue, $value);
-        // for debugging
-        array_push($this->result, $data.' xx '.$value);
-    }
-
-
     public function get($table) {
         
         if (isset($this->qBuild->select)) { // SELECT Mode
@@ -464,6 +468,9 @@ class Builder extends Database {
         if (!empty($this->qBuild->where)) {
             $where = implode(' ', $this->qBuild->where);
             $sql.= ' WHERE '.$where;
+        }
+        if (!empty($this->qBuild->orderby)) {
+            $sql.= ' ORDER BY '.$this->qBuild->orderby;
         }
         
         $this->myQuery = $sql; // Pass back the SQL
