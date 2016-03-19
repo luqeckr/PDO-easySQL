@@ -37,10 +37,33 @@ $db->disconnect();
 
 To update the table
 ```php
+<?php
+$db = new Database();
+$build = new Builder($db);
 $build->setdata('name', 'another name');
 $build->setdata('email', 'anotheremail@domain.com');
 $build->where('id >', 280); /* if not supplied with '>', it will assume '=' */
 $build->update_to('usertable');
+$db->disconnect();
+?>
 ```
 this will make the query: 
-UPDATE usertable SET name='another name', email 'anotheremail@domain.com WHERE id > 280'
+```sql
+UPDATE usertable SET name='another name', email='anotheremail@domain.com WHERE id > 280'
+```
+
+Inserting
+```php
+<?php
+$db = new Database();
+$build = new Builder($db);
+$build->setdata('name', 'another name');
+$build->setdata('email', 'anotheremail@domain.com');
+$build->insert_to('usertable');
+$db->disconnect();
+?>
+```
+this will make the query: 
+```sql
+INSERT INTO usertable(name, email) VALUES ('another name', 'anotheremail@domain.com')
+```
