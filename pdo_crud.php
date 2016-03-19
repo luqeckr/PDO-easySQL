@@ -327,6 +327,7 @@ class Builder extends Database {
         $this->qBuild->join = array();
         $this->qBuild->insertdata = array();
         $this->qBuild->orderby = '';
+        $this->result = array();
     }
 
     public function selects($data) {
@@ -365,7 +366,7 @@ class Builder extends Database {
         array_push($this->qBuild->where, $data);
         array_push($this->qBuild->whereValue, $value);
         // for debugging
-        array_push($this->result, $data.' xx '.$value);
+        //array_push($this->result, $data.' xx '.$value);
     }
 
     public function orderby($column=null) {
@@ -527,8 +528,10 @@ class Builder extends Database {
         /*** put the query together ***/
         $i=0; $setdata = '';
         foreach ($fieldnames as $key) {
-            if ($i > 0) { $prepend = ', '; } else { $prepend = ''; }
-            $setdata.= $prepend . $key.' = :u'.$key;
+            if ($i > 0) { /* first data is key, ON DUP KEY must not have it, so we skip */
+                if ($i > 1) { $prepend = ', '; } else { $prepend = ''; }
+                $setdata.= $prepend . $key.' = :u'.$key;
+            }
             $i++;
         }
         $sql .= $setdata;
@@ -536,7 +539,7 @@ class Builder extends Database {
         $this->myQuery = $sql;
         /*** prepare and bindValue ***/
         $stmt = $this->myconn->prepare($sql);
-
+        echo $sql;
         $i=0;
         foreach ($this->qBuild->insertdata as $key => $value) {
             $param1 = ':'.$key;
@@ -544,9 +547,12 @@ class Builder extends Database {
             $stmt->bindValue($param1, $value);
             /*  duplicate the bind for the UPDATE parameter
                 the first one is for the key, so we skip it */
+            //echo ' * '.$param1.' = '.$value;
             if($i>0) {
                 $stmt->bindValue($param2, $value);
+                //echo ' * '.$param2.' = '.$value;
             }
+            
             $i++;
         }
         /* execute */
