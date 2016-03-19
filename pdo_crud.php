@@ -306,10 +306,6 @@ class Database {
     public function escapeIt($data){
         return $this->myconn->real_escape_string($data);
     }
-
-    
-
-
 }
 
 
@@ -511,5 +507,56 @@ class Builder extends Database {
             return false; // No rows where returned
         } 
         
+    }
+
+    public function insert_or_update($table) {
+        $fieldnames = array_keys($this->qBuild->insertdata);
+        $sql = "INSERT INTO $table";
+        /*** set the field names ***/
+        $fields = '( ' . implode(', ', $fieldnames) . ' )';
+        /*** set the placeholders ***/
+        $bound = '(:' . implode(', :', $fieldnames) . ' )';
+        /*** put the query together ***/
+        $sql .= $fields.' VALUES '.$bound;
+
+        $sql.= ' ON DUPLICATE KEY UPDATE '; /* no need for tablename and SET */
+        /*** set the field names ***/
+        $fields = implode(', ', $fieldnames);
+        /*** set the placeholders ***/
+        $bound = ':' . implode(', :', $fieldnames);
+        /*** put the query together ***/
+        $i=0; $setdata = '';
+        foreach ($fieldnames as $key) {
+            if ($i > 0) { $prepend = ', '; } else { $prepend = ''; }
+            $setdata.= $prepend . $key.' = :u'.$key;
+            $i++;
+        }
+        $sql .= $setdata;
+
+        $this->myQuery = $sql;
+        /*** prepare and bindValue ***/
+        $stmt = $this->myconn->prepare($sql);
+
+        $i=0;
+        foreach ($this->qBuild->insertdata as $key => $value) {
+            $param1 = ':'.$key;
+            $param2 = ':u'.$key;
+            $stmt->bindValue($param1, $value);
+            /*  duplicate the bind for the UPDATE parameter
+                the first one is for the key, so we skip it */
+            if($i>0) {
+                $stmt->bindValue($param2, $value);
+            }
+            $i++;
+        }
+        /* execute */
+        if ($stmt->execute()) {
+            array_push($this->result,$this->myconn->lastInsertId());
+            return true; // The data has been inserted
+        } else{
+            array_push($this->result,$this->myconn->errorInfo());
+            return false; // The data has not been inserted
+        }
+       
     }
 }
