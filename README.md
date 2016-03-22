@@ -1,7 +1,7 @@
 # PDO-easySQL
 A simple PHP Class to use PDO Create, Read, Update and Delete functions. 
 Modified from MySQLi-CRUD-PHP-OOP by the original Author Rory Standley <rorystandley@gmail.com>
-Also, contain additional sql builder, to create a query with very simple and clean code.
+Also, contain additional sql builder which become it main function, to create a query with very simple and clean code.
 
 this is how to use the builder
 ## SELECT builder

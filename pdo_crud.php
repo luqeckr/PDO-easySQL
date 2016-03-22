@@ -1,5 +1,5 @@
 <?php
-/* @PDO-CRUD-PHP-OOP - Luqman Hakim <luqeckr@gmail.com>
+/* @PDO-easySQL - Luqman Hakim <luqeckr@gmail.com>
  * @Modified from MySQLi-CRUD-PHP-OOP
  * @Original Author Rory Standley <rorystandley@gmail.com>
  * @Version 1.0
@@ -35,7 +35,6 @@ class Database {
 
     }
 
-    
     // Function to make connection to database
     public function connect(){
         try {
@@ -78,8 +77,10 @@ class Database {
         $query = $this->myconn->query($sql);
         $this->myQuery = $sql; // Pass back the SQL
         if($query){
+            /* no fetch data, for other query;
             // If the query returns >= 1 assign the number of rows to numResults
             $this->numResults = $this->last_row_count();
+            echo $this->last_row_count();
             // Loop through the query results by the number of rows returned
             for($i = 0; $i < $this->numResults; $i++){
                 $r = $query->fetch(PDO::FETCH_ASSOC);
@@ -94,7 +95,7 @@ class Database {
                         }
                     }
                 }
-            }
+            } */
             return true; // Query was successful
         }else{
             array_push($this->result,$this->myconn->error);
@@ -510,7 +511,42 @@ class Builder extends Database {
         
     }
 
+    public function deletes($table) {
+        
+        $sql = "DELETE FROM $table ";
+        
+        /* Let's join the WHERE to the query, if any */        
+        if (!empty($this->qBuild->where)) {
+            $where = implode(' ', $this->qBuild->where);
+            $sql.= ' WHERE '.$where;
+        } 
+        /* keep the query */
+        $this->myQuery = $sql;
+        /*** prepare and binding ***/
+        $stmt = $this->myconn->prepare($sql);
+        
+        /* bind WHERE value */
+        $i=0;
+        foreach ($this->qBuild->whereCol as $key) {
+            $param1 = ':w'.$key;
+            $stmt->bindValue($param1, $this->qBuild->whereValue[$i]);
+            //array_push($this->result, $param1.' '.$this->qBuild->whereValue[$i]);
+            $i++;
+        }
+
+        /* execute */
+        if ($stmt->execute()) {
+        //if ($stmt->execute($params)) {
+            array_push($this->result,$stmt->rowCount());
+            return true; // The data has been inserted
+        } else{
+            array_push($this->result,$this->myconn->errorInfo());
+            return false; // The data has not been inserted
+        }
+    }
+
     public function insert_or_update($table) {
+
         $fieldnames = array_keys($this->qBuild->insertdata);
         $sql = "INSERT INTO $table";
         /*** set the field names ***/
@@ -539,7 +575,7 @@ class Builder extends Database {
         $this->myQuery = $sql;
         /*** prepare and bindValue ***/
         $stmt = $this->myconn->prepare($sql);
-        echo $sql;
+
         $i=0;
         foreach ($this->qBuild->insertdata as $key => $value) {
             $param1 = ':'.$key;
@@ -547,12 +583,10 @@ class Builder extends Database {
             $stmt->bindValue($param1, $value);
             /*  duplicate the bind for the UPDATE parameter
                 the first one is for the key, so we skip it */
-            //echo ' * '.$param1.' = '.$value;
+
             if($i>0) {
                 $stmt->bindValue($param2, $value);
-                //echo ' * '.$param2.' = '.$value;
             }
-            
             $i++;
         }
         /* execute */
