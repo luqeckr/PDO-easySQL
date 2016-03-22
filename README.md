@@ -67,3 +67,20 @@ this will make the query:
 ```sql
 INSERT INTO usertable(name, email) VALUES ('another name', 'anotheremail@domain.com')
 ```
+## INSERT OR UPDATE
+INSERT row to table, but if the row exist then just UPDATE the row.
+We are doing `INSERT INTO .. ON DUPLICATE KEY UPDATE ..` query
+it's the same way with INSERT builder
+the difference is the firt setdata() is the column key
+
+example:
+```php
+	$build->setdata('id', $id); /* this is the key */
+	$build->setdata('name', $name);
+	$build->setdata('age', $age);
+	$build->insert_or_update('usertable');
+```
+it will build query like this:
+```sql
+	INSERT INTO usertable(id, name, age) VALUES ($id, $name, $age) ON DUPLICATE KEY UPDATE name=$name, age=$age
+```
