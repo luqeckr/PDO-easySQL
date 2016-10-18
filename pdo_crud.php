@@ -6,18 +6,18 @@
  * @Package Database
  */
 class Database {
-	/* 
-	 * Create variables for credentials to MySQL database
-	 * The variables have been declared as private. This
-	 * means that they will only be available with the 
-	 * Database class
-	 */
-    
-	private $db_host = "127.0.0.1";  // Change as required
-	private $db_user = "username"; // Change as required
-	private $db_pass = "password";  // Change as required
-	private $db_name = "database"; // Change as required
-    
+    /*
+     * Create variables for credentials to MySQL database
+     * The variables have been declared as private. This
+     * means that they will only be available with the
+     * Database class
+     */
+
+    private $db_host = "127.0.0.1";  // Change as required
+    private $db_user = "username"; // Change as required
+    private $db_pass = "password";  // Change as required
+    private $db_name = "database"; // Change as required
+
     /*
      * Extra variables that are required by other function such as boolean con variable
      */
@@ -26,12 +26,12 @@ class Database {
     public $result = array(); // Any results from a query will be stored here
     public $myQuery = "";// used for debugging process with SQL return
     private $numResults = "";// used for returning the number of rows
-    private $sel_table = ""; // select query 
+    private $sel_table = ""; // select query
     public $qBuild = "";
 
     function __construct(){
 
-        $this->connect();   
+        $this->connect();
 
     }
 
@@ -41,14 +41,14 @@ class Database {
             if(!$this->con) {
                 $dsn = "mysql:host={$this->db_host}";
                 $this->myconn = new PDO("mysql:host={$this->db_host}; dbname={$this->db_name}", $this->db_user, $this->db_pass);
-                
+
                 $this->con = true;
                 return true;
 
             } else {
                 return true;
             }
-            
+
         } catch(PDOException $e) {
             echo 'ERROR: ' . $e->getMessage();
             return false;
@@ -56,7 +56,7 @@ class Database {
 
     }
 
-    
+
     // Function to disconnect from the database
     public function disconnect(){
         // If there is a connection to the database
@@ -72,7 +72,7 @@ class Database {
 
         }
     }
-    
+
     public function sql($sql){
         $query = $this->myconn->query($sql);
         $this->myQuery = $sql; // Pass back the SQL
@@ -84,12 +84,12 @@ class Database {
             // Loop through the query results by the number of rows returned
             for($i = 0; $i < $this->numResults; $i++){
                 $r = $query->fetch(PDO::FETCH_ASSOC);
-                $key = array_keys($r);
-                for($x = 0; $x < count($key); $x++){
-                    // Sanitizes keys so only alphavalues are allowed
-                    if(!is_int($key[$x])){
-                        if($this->last_row_count() >= 1){
-                            $this->result[$i][$key[$x]] = $r[$key[$x]];
+                   $key = array_keys($r);
+                   for($x = 0; $x < count($key); $x++){
+                       // Sanitizes keys so only alphavalues are allowed
+                       if(!is_int($key[$x])){
+                           if($this->last_row_count() >= 1){
+                               $this->result[$i][$key[$x]] = $r[$key[$x]];
                         }else{
                             $this->result = null;
                         }
@@ -102,7 +102,7 @@ class Database {
             return false; // No rows where returned
         }
     }
-    
+
     // Function to SELECT from the database
     public function select($table, $rows = '*', $join = null, $where = null, $order = null, $limit = null){
         // Create query from the variables passed to the function
@@ -111,6 +111,27 @@ class Database {
             $q .= ' '.$join; //$q .= ' JOIN '.$join; # for ability to use LEFT/RIGHT/INNER/OUTER JOIN
         }
         if($where != null){
+            $wdata = explode('AND', $where);
+            $i=0;
+            foreach ($wdata as $wdata_val) {
+                //$wvalue = explode('=', $wdata_val);
+                $wvalue = preg_split( "/(\=|\>\=|\<\=|\>|\<)/", $wdata_val,0,PREG_SPLIT_DELIM_CAPTURE );
+                #$wvalue = preg_split("/\=/", $where, -1, PREG_SPLIT_DELIM_CAPTURE);
+                #var_dump($wvalue);
+                //print_r($wvalue);
+                $wfilter = preg_replace("/[^A-Za-z0-9\-\=\@\.\_\! ]/", "", $wvalue[2]);
+                // wvalue[1] is delimiter
+                $wh[$i] = $wvalue[0] .$wvalue[1]. $wvalue[2] .'';
+                #$where = $wvalue[0][0] .$wvalue[0][1]. $wvalue[1][0] .'';
+                $i++;
+            }
+            $i=0;
+            $where='';
+            foreach ($wh as $val) {
+                $opw = ($i>0) ? ' AND ' : '';
+                $where.=$opw.$val;
+                $i++;
+            }
             $q .= ' WHERE '.$where;
         }
         if($order != null){
@@ -126,7 +147,7 @@ class Database {
         // Check to see if the table exists
         if($this->tableExists($table)){
             // The table exists, run the query
-            $query = $this->myconn->query($q);    
+            $query = $this->myconn->query($q);
             if($query){
                 // If the query returns >= 1 assign the number of rows to numResults
                 $this->numResults = $this->last_row_count();
@@ -150,16 +171,16 @@ class Database {
                 array_push($this->result,$this->myconn->errorInfo());
                 return false; // No rows where returned
             }
-        }else{
-            return false; // Table does not exist
+          }else{
+              return false; // Table does not exist
         }
     }
-    
+
     // Function to insert into the database
     public function insert($table,$params=array()){
         // Check to see if the table exists
          if($this->tableExists($table)){
-            $sql='INSERT INTO `'.$table.'` (`'.implode('`, `',array_keys($params)).'`) VALUES ("' . implode('", "', $params) . '")';
+             $sql='INSERT INTO `'.$table.'` (`'.implode('`, `',array_keys($params)).'`) VALUES ("' . implode('", "', $params) . '")';
             $this->myQuery = $sql; // Pass back the SQL
             // Make the query to insert to the database
             if($ins = $this->myconn->query($sql)){
@@ -194,7 +215,7 @@ class Database {
                 $param1 = ':'.$key;
                 $stmt->bindValue($param1, $value);
             }
-            
+
             if ($stmt->execute()) {
             //if ($stmt->execute($params)) {
                 array_push($this->result,$this->myconn->lastInsertId());
@@ -207,15 +228,15 @@ class Database {
         } else {
             return false; // Table does not exist
         }
-        
+
     }
-    
+
     //Function to delete table or row(s) from database
     public function delete($table,$where = null){
         // Check to see if table exists
          if($this->tableExists($table)){
-            // The table exists check to see if we are deleting rows or table
-            if($where == null){
+             // The table exists check to see if we are deleting rows or table
+             if($where == null){
                 $delete = 'DROP TABLE '.$table; // Create query to delete table
             }else{
                 $delete = 'DELETE FROM '.$table.' WHERE '.$where; // Create query to delete rows
@@ -225,16 +246,16 @@ class Database {
             if($del->execute()){
                 array_push($this->result,$del->rowCount());
                 $this->myQuery = $delete; // Pass back the SQL
-                return true; // The query exectued correctly 
+                return true; // The query exectued correctly
             }else{
                 array_push($this->result,$this->myconn->errorInfo());
-                return false; // The query did not execute correctly
+                   return false; // The query did not execute correctly
             }
         }else{
             return false; // The table does not exist
         }
     }
-    
+
     // Function to update row in database
     public function update($table,$params=array(),$where){
         // Check to see if table exists
@@ -245,7 +266,7 @@ class Database {
             foreach ($fieldnames as $field) {
                 $args[]=$field.'=:'.$field;
             }
-            
+
             // Create the query
             $sql='UPDATE '.$table.' SET '.implode(',',$args).' WHERE '.$where;
             // Make query to database
@@ -262,7 +283,7 @@ class Database {
             return false; // The table does not exist
         }
     }
-    
+
     // Private function to check if table exists for use with queries
     private function tableExists($table){
         $table = explode(' ', $table);
@@ -281,7 +302,11 @@ class Database {
     public function last_row_count() {
         return $this->myconn->query("SELECT FOUND_ROWS()")->fetchColumn();
     }
-    
+
+    public function lastInsertId() {
+        return $this->myconn->lastInsertId();
+    }
+
     // Public function to return the data to the user
     public function getResult(){
         $val = $this->result;
@@ -304,8 +329,8 @@ class Database {
     }
 
     // Escape your string
-    public function escapeIt($data){
-        return $this->myconn->real_escape_string($data);
+    public function escape($data){
+        return $this->myconn->quote($data);
     }
 }
 
@@ -323,12 +348,28 @@ class Builder extends Database {
         $this->qBuild = ''; // reset value
         $this->qBuild = new stdClass;
         $this->qBuild->where = array();
+        $this->qBuild->whereNoBind = array();
         $this->qBuild->whereValue = array();
         $this->qBuild->whereCol = array();
+        $this->qBuild->prebindVal = array();
         $this->qBuild->join = array();
         $this->qBuild->insertdata = array();
+        $this->qBuild->groupby = '';
         $this->qBuild->orderby = '';
         $this->result = array();
+        $this->sql('SET time_zone = "+08:00";');
+    }
+
+    public function beginTrx() {
+        $this->myconn->beginTransaction();
+    }
+
+    public function endTrx() {
+        $this->myconn->commit();
+    }
+
+    public function undoTrx() {
+        $this->myconn->rollback();
     }
 
     public function selects($data) {
@@ -358,20 +399,40 @@ class Builder extends Database {
         $col = explode(' ', $column);
         /* default operator is = */
         $oper = isset($col[1]) ? $col[1] : '=';
-        
-        $wheredata = $col[0].$oper.':w'.$col[0]; // column =>!=< :wcolumn
 
+        // let's cek if column already in array
+        if (in_array($column, $this->qBuild->whereCol)) {
+            $counter = array_count_values($this->qBuild->whereCol);
+            $prebindVal = ':w'.$counter[$column];
+        } else {
+            $prebindVal = ':w';
+        }
+
+        $filteredCol = preg_replace("/[^A-Za-z0-9]/", "", $col[0]);
+        $wheredata = $col[0].$oper.$prebindVal.$filteredCol; // column =>!=< :wcolumn
+        $wheredataNoBind = $col[0].$oper.$value;
         // is it more than one WHERE?
         $data = $opt ? ' '.$opt.' '.$wheredata : $wheredata;
-        array_push($this->qBuild->whereCol, $col[0]);
+        $dataNoBind = $opt ? ' '.$opt.' '.$wheredataNoBind : $wheredataNoBind;
+        array_push($this->qBuild->whereCol, $filteredCol);
+        array_push($this->qBuild->prebindVal, $prebindVal);
         array_push($this->qBuild->where, $data);
         array_push($this->qBuild->whereValue, $value);
+        array_push($this->qBuild->whereNoBind, $dataNoBind);
         // for debugging
         //array_push($this->result, $data.' xx '.$value);
     }
 
+    public function groupby($column=null) {
+        $this->qBuild->groupby = $column || '';
+    }
+
     public function orderby($column=null) {
         $this->qBuild->orderby = $column ? $column : '';
+    }
+
+    public function limit($limit=null) {
+        $this->qBuild->limit = $limit ? $limit : '';
     }
 
     public function insert_to($table) {
@@ -397,10 +458,11 @@ class Builder extends Database {
             array_push($this->result,$this->myconn->lastInsertId());
             return true; // The data has been inserted
         } else{
-            array_push($this->result,$this->myconn->errorInfo());
+            $this->result = array();
+            array_push($this->result,$stmt->errorInfo());
             return false; // The data has not been inserted
         }
-       
+
     }
 
     // build update table query
@@ -419,11 +481,11 @@ class Builder extends Database {
             $i++;
         }
         $sql .= $setdata;
-        /* Let's join the WHERE to the query, if any */        
+        /* Let's join the WHERE to the query, if any */
         if (!empty($this->qBuild->where)) {
             $where = implode(' ', $this->qBuild->where);
             $sql.= ' WHERE '.$where;
-        } 
+        }
         /* keep the query */
         $this->myQuery = $sql;
         /*** prepare and binding ***/
@@ -435,7 +497,7 @@ class Builder extends Database {
         /* bind WHERE value */
         $i=0;
         foreach ($this->qBuild->whereCol as $key) {
-            $param1 = ':w'.$key;
+            $param1 = $this->qBuild->prebindVal[$i].$key;
             $stmt->bindValue($param1, $this->qBuild->whereValue[$i]);
             //array_push($this->result, $param1.' '.$this->qBuild->whereValue[$i]);
             $i++;
@@ -447,45 +509,59 @@ class Builder extends Database {
             array_push($this->result,$stmt->rowCount());
             return true; // The data has been inserted
         } else{
-            array_push($this->result,$this->myconn->errorInfo());
+            array_push($this->result,$stmt->errorInfo());
             return false; // The data has not been inserted
         }
     }
 
-    public function get($table) {
-        
+    public function get($table, $count=false) {
+
         if (isset($this->qBuild->select)) { // SELECT Mode
             $columns = $this->qBuild->select;
             $sql = 'SELECT '.$columns.' FROM '. $table;
+            $sqlCount = 'SELECT count(*) FROM '. $table;
         }
-        
+
         if (!empty($this->qBuild->join)) {
             $joins = implode(' ', $this->qBuild->join);
             $sql.= ' '.$joins;
+            $sqlCount.= ' '.$joins;
         }
         if (!empty($this->qBuild->where)) {
             $where = implode(' ', $this->qBuild->where);
-            $sql.= ' WHERE '.$where;
+            $sql.= ' WHERE '.$where.'';
+            $sqlCount.= ' WHERE '.$where;
+        }
+        if (!empty($this->qBuild->groupby)) {
+            $sql.= ' GROUP BY '.$this->qBuild->groupby;
+            $sqlCount.= ' GROUP BY '.$this->qBuild->groupby;
         }
         if (!empty($this->qBuild->orderby)) {
             $sql.= ' ORDER BY '.$this->qBuild->orderby;
+            $sqlCount.= ' ORDER BY '.$this->qBuild->orderby;
         }
-        
+        if (!empty($this->qBuild->limit)) {
+            $sql.= ' LIMIT '.$this->qBuild->limit;
+            $sqlCount.= ' LIMIT '.$this->qBuild->limit;
+        }
+        //echo $sql;
         $this->myQuery = $sql; // Pass back the SQL
+
         /* Prepare the query */
         $stmt = $this->myconn->prepare($sql);
         /* bind WHERE value */
         $i=0;
         foreach ($this->qBuild->whereCol as $key) {
-            $param1 = ':w'.$key;
+            $param1 = $this->qBuild->prebindVal[$i].$key;
             $stmt->bindValue($param1, $this->qBuild->whereValue[$i]);
             //array_push($this->result, $param1.' '.$this->qBuild->whereValue[$i]);
             $i++;
         }
         /* try to execute */
-        if ($g = $stmt->execute()) {
-            //$stmt->fetchAll(PDO::FETCH_ASSOC);
-            $this->numResults = $this->last_row_count();
+        if ($stmt->execute()) {
+            //$theResult = $stmt->fetchColumn();
+            $this->numResults = $stmt->rowCount(); //this->last_row_count();
+            //$this->numResults = $theResult[0];
 
             // Loop through the query results by the number of rows returned
             for($i = 0; $i < $this->numResults; $i++){
@@ -495,7 +571,8 @@ class Builder extends Database {
                 for($x = 0; $x < count($key); $x++){
                     // Sanitizes keys so only alphavalues are allowed
                     if(!is_int($key[$x])){
-                        if($this->last_row_count() >= 1){
+                        //if($this->last_row_count() >= 1){
+                        if($this->numResults >= 1){
                             $this->result[$i][$key[$x]] = $r[$key[$x]];
                         }else{
                             $this->result[$i][$key[$x]] = null;
@@ -503,32 +580,32 @@ class Builder extends Database {
                     }
                 }
             }
-            return true;   
+            return true;
         } else {
-            array_push($this->result,$this->myconn->errorInfo());
+            array_push($this->result,$stmt->errorInfo());
             return false; // No rows where returned
-        } 
-        
+        }
+
     }
 
     public function deletes($table) {
-        
+
         $sql = "DELETE FROM $table ";
-        
-        /* Let's join the WHERE to the query, if any */        
+
+        /* Let's join the WHERE to the query, if any */
         if (!empty($this->qBuild->where)) {
             $where = implode(' ', $this->qBuild->where);
             $sql.= ' WHERE '.$where;
-        } 
+        }
         /* keep the query */
         $this->myQuery = $sql;
         /*** prepare and binding ***/
         $stmt = $this->myconn->prepare($sql);
-        
+
         /* bind WHERE value */
         $i=0;
         foreach ($this->qBuild->whereCol as $key) {
-            $param1 = ':w'.$key;
+            $param1 = $this->qBuild->prebindVal[$i].$key;
             $stmt->bindValue($param1, $this->qBuild->whereValue[$i]);
             //array_push($this->result, $param1.' '.$this->qBuild->whereValue[$i]);
             $i++;
@@ -540,7 +617,7 @@ class Builder extends Database {
             array_push($this->result,$stmt->rowCount());
             return true; // The data has been inserted
         } else{
-            array_push($this->result,$this->myconn->errorInfo());
+            array_push($this->result,$stmt->errorInfo());
             return false; // The data has not been inserted
         }
     }
@@ -594,9 +671,9 @@ class Builder extends Database {
             array_push($this->result,$this->myconn->lastInsertId());
             return true; // The data has been inserted
         } else{
-            array_push($this->result,$this->myconn->errorInfo());
+            array_push($this->result,$stmt->errorInfo());
             return false; // The data has not been inserted
         }
-       
+
     }
 }
