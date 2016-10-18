@@ -106,3 +106,32 @@ it will build query like this:
 ```sql
 	INSERT INTO usertable(id, name, age) VALUES (15, 'updated name', 27) ON DUPLICATE KEY UPDATE name='updated name', age=27
 ```
+
+## Transaction
+```php
+<?php
+	$db = new Database();
+	$build = new Builder($db);
+
+	// begin the transaction
+	$build->beginTrx();
+	$build->setdata('name', 'another name');
+	$build->setdata('email', 'anotheremail@domain.com');
+	$build->insert_to('usertable');
+	// add more data
+	$build = new Builder($db);
+	$build->setdata('name', 'another name 2');
+	$build->setdata('email', 'anotheremail2@domain.com');
+	$build->insert_to('usertable');
+	// commit transaction
+	$build->endTrx();
+	$db->disconnect();
+?>
+```
+
+To rollback transaction, just do very easy command (without commit transaction - endTrx() ):
+```php
+<?php
+	$build->undoTrx();
+?>
+```
